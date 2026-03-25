@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tranoko Admin — Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --or:#F47920;--or-f:#C85F10;--or-l:#FFF3E8;--or-m:#FFB347;
+  --v:#2D9945;--vl:#E8F5EC;--vd:#1A4A22;
+  --r:#C0392B;--rl:#FFF0F0;--rd:#8B1A10;
+  --b:#1A56A0;--bl:#E3F0FF;
+  --vio:#7B1FA2;--viol:#F3E5F5;
+  --noir:#151515;--gris:#888;--gl:#F8F6F2;--bord:#E5E0D8;
+  --blanc:#fff;--sh:0 2px 14px rgba(0,0,0,.07);
+  --r14:14px;
+  --grad:linear-gradient(135deg,#151515 0%,#2A1A08 55%,#1A0D00 100%);
+  --f:'Sora',sans-serif;--fm:'Space Mono',monospace;
+}
+body{font-family:var(--f);background:#0D0804;min-height:100vh;color:var(--noir)}
+
+/* ── LOGIN ────────────────────────────────────────────────────── */
+#login-screen{position:fixed;inset:0;background:var(--grad);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999}
+.login-box{background:rgba(255,255,255,.08);border-radius:24px;padding:36px 28px;width:100%;max-width:380px;border:1.5px solid rgba(244,121,32,.3);text-align:center;backdrop-filter:blur(10px)}
+.login-logo{font-size:14px;font-weight:800;color:var(--or);letter-spacing:.15em;margin-bottom:6px}
+.login-box h1{color:#fff;font-size:26px;font-weight:800;margin-bottom:4px}
+.login-box p{color:rgba(255,255,255,.5);font-size:13px;margin-bottom:28px}
+.login-input{width:100%;padding:15px;border-radius:14px;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:20px;font-family:var(--fm);outline:none;text-align:center;letter-spacing:6px;margin-bottom:14px;transition:border-color .2s}
+.login-input:focus{border-color:var(--or)}
+.login-input::placeholder{letter-spacing:2px;font-size:14px;color:rgba(255,255,255,.3)}
+.login-btn{width:100%;padding:15px;border-radius:14px;background:var(--or);border:none;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--f);transition:background .2s}
+.login-btn:hover{background:var(--or-f)}
+.login-err{color:#FFB3B3;font-size:12px;margin-top:10px;min-height:18px}
+
+/* ── APP ──────────────────────────────────────────────────────── */
+#app{display:none;min-height:100vh;background:var(--gl)}
+.topbar{background:var(--grad);padding:13px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 16px rgba(0,0,0,.4)}
+.topbar-brand{font-size:16px;font-weight:800;color:#fff;flex:1;letter-spacing:.02em}
+.topbar-brand span{color:var(--or)}
+.topbar-date{color:rgba(255,255,255,.5);font-size:11px}
+.logout-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);padding:6px 13px;border-radius:10px;font-size:12px;cursor:pointer;font-family:var(--f);font-weight:600;transition:all .2s}
+.logout-btn:hover{background:rgba(255,255,255,.2)}
+
+/* ── TABS ─────────────────────────────────────────────────────── */
+.tabs{display:flex;background:var(--noir);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:13px 18px;color:rgba(255,255,255,.45);font-size:12px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:var(--f);background:none;border-top:none;border-left:none;border-right:none;letter-spacing:.04em;transition:all .2s}
+.tab.active{color:var(--or);border-bottom-color:var(--or)}
+.tab:hover{color:rgba(255,255,255,.8)}
+
+.page{display:none;padding:16px;max-width:960px;margin:0 auto}
+.page.active{display:block}
+
+/* ── CARDS ────────────────────────────────────────────────────── */
+.card{background:var(--blanc);border-radius:var(--r14);padding:18px;box-shadow:var(--sh);margin-bottom:14px;border:1px solid var(--bord)}
+.card-title{font-size:13px;font-weight:800;color:var(--noir);margin-bottom:16px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── KPI ──────────────────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--blanc);border-radius:var(--r14);padding:16px;border:1px solid var(--bord);box-shadow:var(--sh);text-align:center}
+.kpi-val{font-size:32px;font-weight:800;color:var(--noir);line-height:1;font-family:var(--fm)}
+.kpi-lbl{font-size:10px;color:var(--gris);margin-top:5px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.kpi.vert .kpi-val{color:var(--v)}
+.kpi.orange .kpi-val{color:var(--or)}
+.kpi.rouge .kpi-val{color:var(--r)}
+.kpi.bleu .kpi-val{color:var(--b)}
+
+/* ── TABLE ────────────────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--gl);padding:10px 12px;text-align:left;font-size:10px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--bord)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--bord);color:var(--noir);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--or-l)}
+
+/* ── BADGES ───────────────────────────────────────────────────── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.04em}
+.badge-essai{background:var(--bl);color:var(--b)}
+.badge-expire{background:var(--rl);color:var(--rd)}
+.badge-licencie{background:var(--vl);color:var(--vd)}
+.badge-promo{background:var(--viol);color:#4A2870}
+
+/* ── FORMS ────────────────────────────────────────────────────── */
+.fi{width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--bord);font-size:14px;font-family:var(--f);background:var(--blanc);color:var(--noir);outline:none;transition:border-color .2s}
+.fi:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(244,121,32,.1)}
+.fg{margin-bottom:13px}
+.fl{display:block;font-size:11px;font-weight:800;color:var(--gris);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+.btn{padding:11px 18px;border-radius:12px;border:none;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--f);display:inline-flex;align-items:center;gap:6px;transition:all .2s;letter-spacing:.03em}
+.btn-o{background:var(--grad);color:#fff}
+.btn-o:hover{opacity:.9}
+.btn-v{background:var(--v);color:#fff}
+.btn-v:hover{opacity:.9}
+.btn-r{background:var(--r);color:#fff}
+.btn-r:hover{opacity:.9}
+.btn-sm{padding:7px 12px;font-size:11px;border-radius:8px}
+.btn-out{background:var(--blanc);border:1.5px solid var(--or);color:var(--or)}
+.btn-out:hover{background:var(--or-l)}
+
+/* ── CODE RÉSULTAT ────────────────────────────────────────────── */
+.code-result{background:var(--or-l);border:2px solid var(--or-m);border-radius:14px;padding:20px;margin-top:14px;text-align:center;display:none;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.code-val{font-size:26px;font-weight:800;color:var(--or-f);letter-spacing:3px;font-family:var(--fm);margin-bottom:8px;word-break:break-all}
+.copy-btn{background:var(--or);color:#fff;border:none;padding:9px 20px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--f);transition:background .2s}
+.copy-btn:hover{background:var(--or-f)}
+
+/* ── SEARCH ───────────────────────────────────────────────────── */
+.search-bar{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--blanc);border:1.5px solid var(--bord);border-radius:12px;margin-bottom:14px}
+.search-bar input{flex:1;border:none;background:transparent;font-size:14px;color:var(--noir);font-family:var(--f);outline:none}
+
+/* ── COUNTDOWN ────────────────────────────────────────────────── */
+.countdown-bar{background:linear-gradient(135deg,#1A0D00,#F47920);border-radius:var(--r14);padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.countdown-bar .label{font-size:13px;font-weight:800;color:#fff}
+.countdown-bar .days{font-size:32px;font-weight:800;color:#FFD700;line-height:1;font-family:var(--fm)}
+.countdown-bar .sub{font-size:11px;color:rgba(255,255,255,.65);margin-top:3px}
+
+/* ── COMM ROW ─────────────────────────────────────────────────── */
+.comm-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bord)}
+.comm-row:last-child{border-bottom:none}
+
+/* ── TOAST ────────────────────────────────────────────────────── */
+#admin-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--noir);color:#fff;padding:10px 24px;border-radius:24px;font-size:13px;font-weight:700;z-index:9999;display:none;white-space:nowrap;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+
+/* ── REVENUS GRID ─────────────────────────────────────────────── */
+.rev-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.rev-box{text-align:center;padding:14px;border-radius:12px}
+.rev-val{font-size:18px;font-weight:800;line-height:1;font-family:var(--fm)}
+.rev-lbl{font-size:10px;margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+
+/* ── RESPONSIVE ───────────────────────────────────────────────── */
+@media(max-width:640px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .tbl{font-size:12px}
+  .tbl th,.tbl td{padding:8px 9px}
+  .rev-grid{grid-template-columns:1fr}
+  .rev-val{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<div id="admin-toast"></div>
+
+<!-- ═══ LOGIN ═══════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">TRANOKO</div>
+    <h1>Console Admin</h1>
+    <p>Accès privé · BTP Madagascar</p>
+    <input class="login-input" type="password" id="login-mdp" placeholder="Code PIN"
+      inputmode="numeric" maxlength="6" autocomplete="off"
+      onkeydown="if(event.key==='Enter')adminLogin()">
+    <button class="login-btn" onclick="adminLogin()">🔐 Accéder</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ══════════════════════════════════════════════════════════ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">TRA<span>NOKO</span> Admin</div>
+    <span class="topbar-date" id="admin-date"></span>
+    <button class="logout-btn" onclick="adminLogout()">Déconnexion</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+    <button class="tab" onclick="showPage('clients',this)">👥 Clients</button>
+    <button class="tab" onclick="showPage('licences',this)">🔑 Licences</button>
+    <button class="tab" onclick="showPage('commerciaux',this)">🤝 Commerciaux</button>
+    <button class="tab" onclick="showPage('parametres',this)">⚙️ Paramètres</button>
+  </div>
+
+  <!-- ── DASHBOARD ─────────────────────────────────────────────── -->
+  <div class="page active" id="page-dashboard">
+    <div style="padding-top:4px"></div>
+
+    <div class="countdown-bar" id="countdown-bar">
+      <div>
+        <div class="label">🔥 Prix de lancement actif</div>
+        <div class="sub" id="countdown-prix-sub">— Ar au lieu de 150 000 Ar</div>
+      </div>
+      <div style="text-align:right">
+        <div class="days" id="countdown-jours">—</div>
+        <div class="sub">jours restants</div>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi bleu"><div class="kpi-val" id="kpi-installs">0</div><div class="kpi-lbl">Installations</div></div>
+      <div class="kpi orange"><div class="kpi-val" id="kpi-essais">0</div><div class="kpi-lbl">En essai</div></div>
+      <div class="kpi rouge"><div class="kpi-val" id="kpi-expires">0</div><div class="kpi-lbl">Expirés</div></div>
+      <div class="kpi vert"><div class="kpi-val" id="kpi-licencies">0</div><div class="kpi-lbl">Licenciés</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💰 Revenus ce mois</div>
+      <div class="rev-grid">
+        <div class="rev-box" style="background:var(--vl)">
+          <div class="rev-val" style="color:var(--vd)" id="rev-brut">0 Ar</div>
+          <div class="rev-lbl" style="color:var(--vd)">Revenus bruts</div>
+        </div>
+        <div class="rev-box" style="background:var(--rl)">
+          <div class="rev-val" style="color:var(--rd)" id="rev-comm">0 Ar</div>
+          <div class="rev-lbl" style="color:var(--rd)">Commissions dues</div>
+        </div>
+        <div class="rev-box" style="background:var(--or-l)">
+          <div class="rev-val" style="color:var(--or-f)" id="rev-net">0 Ar</div>
+          <div class="rev-lbl" style="color:var(--or-f)">Votre gain net</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Dernières inscriptions</div>
+      <div id="dash-recents"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏆 Top commerciaux ce mois</div>
+      <div id="dash-top-comm"></div>
+    </div>
+  </div>
+
+  <!-- ── CLIENTS ───────────────────────────────────────────────── -->
+  <div class="page" id="page-clients">
+    <div style="padding-top:4px"></div>
+    <div class="search-bar">
+      <span style="color:var(--gris)">🔍</span>
+      <input type="text" id="client-search" placeholder="Rechercher par prénom ou numéro…" oninput="affClients()">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-sm" id="f-tous" onclick="filtreStatut('')" style="background:var(--or);color:#fff;border:none">Tous</button>
+      <button class="btn btn-sm btn-out" id="f-essai" onclick="filtreStatut('essai')">En essai</button>
+      <button class="btn btn-sm btn-out" id="f-expire" onclick="filtreStatut('expire')">Expirés</button>
+      <button class="btn btn-sm btn-out" id="f-licencie" onclick="filtreStatut('licencie')">Licenciés</button>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <table class="tbl" id="clients-table">
+        <thead><tr>
+          <th>Prénom</th><th>Téléphone</th><th>Commercial</th>
+          <th>Statut</th><th>Date</th><th>Action</th>
+        </tr></thead>
+        <tbody id="clients-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── LICENCES ──────────────────────────────────────────────── -->
+  <div class="page" id="page-licences">
+    <div style="padding-top:4px"></div>
+    <div class="card">
+      <div class="card-title">🔑 Générer un code de licence</div>
+      <div style="background:var(--bl);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--b);line-height:1.7;font-weight:600">
+        💡 Le client vous appelle → vous donne son numéro → entrez-le → copiez le code → dictez-le lui.
+      </div>
+      <div class="fg">
+        <label class="fl">Numéro de téléphone du client *</label>
+        <input class="fi" id="lic-gen-tel" type="tel" placeholder="034 XX XXX XX" inputmode="numeric"
+          oninput="document.getElementById('lic-gen-result').style.display='none'">
+      </div>
+      <div class="fg">
+        <label class="fl">Prénom (optionnel)</label>
+        <input class="fi" id="lic-gen-prenom" type="text" placeholder="Ex : Rakoto">
+      </div>
+      <div class="fg">
+        <label class="fl">Prix encaissé</label>
+        <select class="fi" id="lic-gen-prix">
+          <option value="27000">27 000 Ar — Prix lancement (sans code promo)</option>
+          <option value="24300">24 300 Ar — Avec code promo commercial (−10%)</option>
+          <option value="30000">30 000 Ar — Prix catalogue</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Commercial (si applicable)</label>
+        <select class="fi" id="lic-gen-comm">
+          <option value="">— Aucun (client direct)</option>
+        </select>
+      </div>
+      <button class="btn btn-o" onclick="genererLicence()" style="width:100%;justify-content:center;margin-top:4px">
+        ⚡ Générer le code de licence
+      </button>
+
+      <div class="code-result" id="lic-gen-result">
+        <div style="font-size:10px;color:var(--or-f);margin-bottom:8px;font-weight:800;letter-spacing:.08em">CODE À DICTER AU CLIENT :</div>
+        <div class="code-val" id="lic-gen-code"></div>
+        <div style="font-size:12px;color:var(--gris);margin-bottom:14px" id="lic-gen-info"></div>
+        <button class="copy-btn" onclick="copierCode()">📋 Copier le code</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Licences générées</div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Client</th><th>Téléphone</th><th>Code</th><th>Prix</th><th>Commercial</th><th>Date</th></tr></thead>
+          <tbody id="licences-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMMERCIAUX ───────────────────────────────────────────── -->
+  <div class="page" id="page-commerciaux">
+    <div style="padding-top:4px"></div>
+    <div class="card">
+      <div class="card-title">➕ Ajouter un commercial</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="fi" id="new-comm-nom" type="text" placeholder="Nom (ex: Rakoto)" style="flex:1;min-width:140px">
+        <input class="fi" id="new-comm-code" type="text" placeholder="Code promo (ex: RAKOTO)" style="flex:1;min-width:140px;text-transform:uppercase"
+          oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')">
+        <button class="btn btn-o" onclick="ajouterCommercial()">Ajouter</button>
+      </div>
+    </div>
+    <div id="comm-list"></div>
+  </div>
+
+  <!-- ── PARAMÈTRES ────────────────────────────────────────────── -->
+  <div class="page" id="page-parametres">
+    <div style="padding-top:4px"></div>
+
+    <div class="card">
+      <div class="card-title">💰 Tarification Tranoko</div>
+      <div class="comm-row"><span style="font-size:13px;color:var(--gris)">Prix catalogue</span><strong style="font-family:var(--fm)">30 000 Ar</strong></div>
+      <div class="comm-row"><span style="font-size:13px;color:var(--gris)">Prix lancement</span><strong style="color:var(--v);font-family:var(--fm)">27 000 Ar</strong></div>
+      <div class="comm-row"><span style="font-size:13px;color:var(--gris)">Prix avec code promo</span><strong style="color:var(--or);font-family:var(--fm)">24 300 Ar</strong></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 Période de lancement</div>
+      <div class="fg">
+        <label class="fl">Date de fin du prix de lancement</label>
+        <input class="fi" id="param-fin-lanc" type="date" onchange="sauverParams()">
+      </div>
+      <div id="param-lanc-status" style="font-size:12px;margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🤝 Commissions commerciaux</div>
+      <div class="comm-row">
+        <span style="font-size:13px;color:var(--gris)">Taux &lt; 29 ventes</span>
+        <strong>15% = 4 050 Ar / licence</strong>
+      </div>
+      <div class="comm-row">
+        <span style="font-size:13px;color:var(--gris)">Taux ≥ 29 ventes</span>
+        <strong style="color:var(--v)">20% = 5 400 Ar / licence</strong>
+      </div>
+      <div class="comm-row">
+        <span style="font-size:13px;color:var(--gris)">Base de calcul</span>
+        <strong>27 000 Ar (prix lancement)</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔗 Google Apps Script</div>
+      <div style="font-size:12px;color:var(--gris);margin-bottom:10px;line-height:1.7">
+        URL du GAS qui gère les licences et les essais. Déployez le fichier <code>Code.gs</code> fourni.
+      </div>
+      <div class="fg">
+        <label class="fl">URL Apps Script</label>
+        <input class="fi" id="param-gas-url" type="url" placeholder="https://script.google.com/macros/s/…" onchange="sauverParams()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📤 Export données</div>
+      <button class="btn btn-v" onclick="exporterDonnees()" style="width:100%;justify-content:center">
+        📥 Télécharger sauvegarde JSON
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔄 Importer données JSON</div>
+      <div style="font-size:12px;color:var(--gris);margin-bottom:10px">
+        Restaurez une sauvegarde précédente.
+      </div>
+      <input type="file" id="import-file" accept=".json" onchange="importerDonnees(event)" class="fi" style="padding:8px">
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// TRANOKO ADMIN — Console de gestion v1.0
+// ══════════════════════════════════════════════════════════════════════
+
+const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbxtVHAABA_bz6Re312dajbhyca_iV_joePgdxyDn9Ev-QlQMlmdfFOxJZ2z-Fju3SJ9VQ/exec';
+
+const ADMIN = {
+  PRIX_BASE  : 27000,    // base calcul commission (prix lancement)
+  COMM_TAUX1 : 0.15,      // < 30 ventes
+  COMM_TAUX2 : 0.20,      // ≥ 30 ventes
+  COMM_SEUIL : 29,
+
+  commTaux(n){ return n >= this.COMM_SEUIL ? this.COMM_TAUX2 : this.COMM_TAUX1; },
+  commMontant(n){ return Math.round(this.PRIX_BASE * this.commTaux(n)); },
+
+  // LocalStorage
+  getData(k){ try{ return JSON.parse(localStorage.getItem('tn_admin_'+k)||'[]'); }catch{ return []; } },
+  setData(k,v){ localStorage.setItem('tn_admin_'+k, JSON.stringify(v)); },
+  getObj(k,def={}){ try{ return JSON.parse(localStorage.getItem('tn_admin_'+k)||JSON.stringify(def)); }catch{ return def; } },
+  setObj(k,v){ localStorage.setItem('tn_admin_'+k, JSON.stringify(v)); },
+
+  // Session jeton
+  getJeton(){ try{ return JSON.parse(localStorage.getItem('tn_admin_session')||'null'); }catch{ return null; } },
+  setJeton(j){ localStorage.setItem('tn_admin_session', JSON.stringify(j)); },
+  clearJeton(){ localStorage.removeItem('tn_admin_session'); },
+  jetonValide(){
+    const j = this.getJeton();
+    return j && j.jeton && j.expire && Date.now() < parseInt(j.expire);
+  }
+};
+
+// ── ÉTAT GLOBAL ───────────────────────────────────────────────────────
+let CLIENTS      = [];
+let LICENCES     = [];
+let COMMERCIAUX  = [];
+let PARAMS       = {};
+let FILTRE_STATUT = '';
+let currentCode  = '';
+
+// ── LOGIN ─────────────────────────────────────────────────────────────
+async function adminLogin(){
+  const mdp   = document.getElementById('login-mdp').value.trim();
+  const errEl = document.getElementById('login-err');
+  const btn   = document.querySelector('.login-btn');
+  if(!mdp){ errEl.textContent = 'Entrez votre code.'; return; }
+
+  // Récupérer l'URL GAS (déjà configurée, ou fallback vide)
+  const gasUrl = ADMIN.getObj('params', { gasUrl: GAS_URL_DEFAULT }).gasUrl || GAS_URL_DEFAULT;
+
+  if(!gasUrl){
+    errEl.textContent = 'URL GAS non configurée. Allez dans Paramètres.';
+    return;
+  }
+  // Mémoriser l'URL pour la session
+  const params = ADMIN.getObj('params', {});
+  params.gasUrl = gasUrl;
+  ADMIN.setObj('params', params);
+
+  btn.textContent = '⏳ Connexion…'; btn.disabled = true;
+  try {
+    const url  = gasUrl + '?d=' + encodeURIComponent(JSON.stringify({ type:'login_admin', mdp }));
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if(data.ok){
+      ADMIN.setJeton({ jeton: data.jeton, expire: data.expire });
+      ouvrirApp();
+    } else {
+      errEl.textContent = 'Code incorrect.';
+      document.getElementById('login-mdp').value = '';
+    }
+  } catch(e) {
+    // Réseau down → accepter si jeton encore valide
+    if(ADMIN.jetonValide()){ ouvrirApp(); return; }
+    errEl.textContent = 'Erreur réseau. Vérifiez votre connexion.';
+  } finally {
+    btn.textContent = '🔐 Accéder'; btn.disabled = false;
+  }
+}
+
+function ouvrirApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('login-mdp').value = '';
+  initAdmin();
+}
+
+function adminLogout(){
+  ADMIN.clearJeton();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-mdp').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('admin-date').textContent =
+    new Date().toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+  // Auto-login si jeton valide
+  if(ADMIN.jetonValide()) ouvrirApp();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────
+function initAdmin(){
+  PARAMS = ADMIN.getObj('params', { finLanc:'2026-06-30', gasUrl: GAS_URL_DEFAULT });
+  // Sécurité : si l'URL GAS a été perdue (cookies effacés), on la remet automatiquement
+  if(!PARAMS.gasUrl) {
+    PARAMS.gasUrl = GAS_URL_DEFAULT;
+    ADMIN.setObj('params', PARAMS);
+  }
+  chargerParams();
+  chargerDepuisGAS();
+}
+
+async function chargerDepuisGAS(){
+  const session = ADMIN.getJeton();
+  if(!session) return;
+
+  // Afficher spinner pendant chargement
+  ['kpi-installs','kpi-essais','kpi-expires','kpi-licencies'].forEach(id => {
+    document.getElementById(id).textContent = '…';
+  });
+  toast('⏳ Chargement des données…');
+
+  try {
+    // Charger dashboard + clients + commerciaux + licences en parallèle
+    const [dashRes, clientsRes, commRes, licRes] = await Promise.all([
+      gasCallAsync({ type:'get_dashboard', ...ADMIN.getJeton() }),
+      gasCallAsync({ type:'get_clients',   ...ADMIN.getJeton() }),
+      gasCallAsync({ type:'get_commerciaux',...ADMIN.getJeton() }),
+      gasCallAsync({ type:'get_licences',  ...ADMIN.getJeton() })
+    ]);
+
+    if(dashRes.ok)    { affDashboardData(dashRes); }
+    if(clientsRes.ok) { CLIENTS = clientsRes.clients.map(c => ({...c, codePromo: c.codePromo || c.promo || ''})); affClients(); }
+    if(commRes.ok)    { COMMERCIAUX = commRes.commerciaux; remplirSelCommerciaux(); affCommerciaux(); }
+    if(licRes.ok)     { LICENCES = licRes.licences; affLicences(); }
+
+    toast('✅ Données chargées');
+  } catch(e) {
+    toast('⚠️ Erreur réseau — données non chargées');
+    ['kpi-installs','kpi-essais','kpi-expires','kpi-licencies'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+  }
+}
+
+function gasCallAsync(payload){
+  return new Promise((resolve, reject) => {
+    const url = PARAMS.gasUrl + '?d=' + encodeURIComponent(JSON.stringify(payload));
+    fetch(url)
+      .then(r => r.json())
+      .then(resolve)
+      .catch(reject);
+  });
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────
+function showPage(name, el){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  chargerDepuisGAS();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function toast(msg){
+  const t = document.getElementById('admin-toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2800);
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────
+function affDashboard(){
+  // Countdown (local, pas besoin du GAS)
+  const fin   = new Date(PARAMS.finLanc || '2026-06-30');
+  const jours = Math.max(0, Math.ceil((fin - Date.now()) / 86400000));
+  document.getElementById('countdown-jours').textContent = jours;
+  document.getElementById('countdown-prix-sub').textContent = '27 000 Ar au lieu de 30 000 Ar';
+  if(jours <= 0){
+    document.getElementById('countdown-bar').style.background = '#555';
+    document.getElementById('countdown-bar').querySelector('.label').textContent = '⚠️ Période de lancement terminée';
+  }
+  // Les KPIs sont remplis par affDashboardData() après chargement GAS
+}
+
+function affDashboardData(res){
+  // Countdown
+  const fin   = new Date(PARAMS.finLanc || '2026-06-30');
+  const jours = Math.max(0, Math.ceil((fin - Date.now()) / 86400000));
+  document.getElementById('countdown-jours').textContent = jours;
+  if(jours <= 0){
+    document.getElementById('countdown-bar').style.background = '#555';
+    document.getElementById('countdown-bar').querySelector('.label').textContent = '⚠️ Période de lancement terminée';
+  }
+
+  // KPIs
+  document.getElementById('kpi-installs').textContent  = res.installs  || 0;
+  document.getElementById('kpi-essais').textContent    = res.enEssai   || 0;
+  document.getElementById('kpi-expires').textContent   = res.expires   || 0;
+  document.getElementById('kpi-licencies').textContent = res.licencies || 0;
+
+  // Revenus
+  document.getElementById('rev-brut').textContent = fmt(res.revBrut || 0) + ' Ar';
+  document.getElementById('rev-comm').textContent = fmt(res.revComm || 0) + ' Ar';
+  document.getElementById('rev-net').textContent  = fmt(res.revNet  || 0) + ' Ar';
+
+  // Dernières inscriptions
+  const derniers = res.derniers || [];
+  document.getElementById('dash-recents').innerHTML = derniers.length
+    ? derniers.map(c => `<div class="comm-row">
+        <div><strong>${c.prenom || '—'}</strong> <span style="color:var(--gris);font-size:12px;font-family:var(--fm)">${c.tel}</span></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${c.promo ? `<span class="badge badge-promo">${c.promo}</span>` : ''}
+          <span class="badge badge-${c.statut}">${lblStatut(c.statut)}</span>
+        </div>
+      </div>`).join('')
+    : '<div style="color:var(--gris);font-size:13px;padding:12px 0">Aucun client encore.</div>';
+
+  // Top commerciaux
+  const topComm = res.topComm || {};
+  const topArr  = Object.entries(topComm).sort((a,b) => b[1]-a[1]).slice(0,5);
+  document.getElementById('dash-top-comm').innerHTML = topArr.length
+    ? topArr.map(([code,nb], i) => {
+        const c = COMMERCIAUX.find(x => x.code === code);
+        return `<div class="comm-row">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
+            <div>
+              <div style="font-weight:800">${c ? c.nom : code}</div>
+              <div style="font-size:11px;color:var(--gris)">${code}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:800;color:var(--v);font-family:var(--fm)">${nb} licence${nb>1?'s':''}</div>
+            <div style="font-size:11px;color:var(--gris)">${fmt(ADMIN.commMontant(nb)*nb)} Ar comm.</div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--gris);font-size:13px;padding:12px 0">Aucune vente via commercial ce mois.</div>';
+}
+
+// ── STATUT CLIENT ─────────────────────────────────────────────────────
+function statutClient(c){
+  if(c.licencie) return 'licencie';
+  if(!c.debut) return 'essai';
+  const duree = (c.codePromo ? 2 : 1) * 86400000;
+  return Date.now() < new Date(c.debut).getTime() + duree ? 'essai' : 'expire';
+}
+function lblStatut(s){
+  return s === 'licencie' ? '✅ Licencié' : s === 'essai' ? '⏳ Essai' : '❌ Expiré';
+}
+
+// ── CLIENTS ───────────────────────────────────────────────────────────
+function filtreStatut(s){
+  FILTRE_STATUT = s;
+  ['tous','essai','expire','licencie'].forEach(id => {
+    const btn = document.getElementById('f-'+id);
+    if(!btn) return;
+    const actif = (s === '' && id === 'tous') || s === id;
+    btn.style.background    = actif ? 'var(--or)' : 'var(--blanc)';
+    btn.style.color         = actif ? '#fff' : 'var(--or)';
+    btn.style.borderColor   = 'var(--or)';
+  });
+  affClients();
+}
+
+function affClients(){
+  const search = (document.getElementById('client-search')?.value || '').toLowerCase();
+  const liste = CLIENTS.filter(c => {
+    if(FILTRE_STATUT && statutClient(c) !== FILTRE_STATUT) return false;
+    if(search && !c.prenom?.toLowerCase().includes(search) && !c.tel?.includes(search)) return false;
+    return true;
+  });
+  document.getElementById('clients-tbody').innerHTML = liste.length
+    ? [...liste].reverse().map(c => `<tr>
+        <td><strong>${c.prenom || '—'}</strong></td>
+        <td style="font-family:var(--fm);font-size:12px">${c.tel || '—'}</td>
+        <td>${c.codePromo ? `<span class="badge badge-promo">${c.codePromo}</span>` : '<span style="color:var(--gris);font-size:12px">Direct</span>'}</td>
+        <td><span class="badge badge-${statutClient(c)}">${lblStatut(statutClient(c))}</span></td>
+        <td style="font-size:12px;color:var(--gris)">${c.debut ? new Date(c.debut).toLocaleDateString('fr-FR') : '—'}</td>
+        <td>${statutClient(c) !== 'licencie'
+          ? `<button class="btn btn-sm btn-o" onclick="ouvrirGenLicence('${c.tel}','${c.prenom||''}','${c.codePromo||''}')">🔑 Activer</button>`
+          : '<span style="color:var(--v);font-size:12px;font-weight:800">✅ Actif</span>'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--gris);padding:20px">Aucun client trouvé</td></tr>';
+}
+
+function ouvrirGenLicence(tel, prenom, codePromo){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-licences').classList.add('active');
+  document.querySelectorAll('.tab')[2].classList.add('active');
+  document.getElementById('lic-gen-tel').value    = tel;
+  document.getElementById('lic-gen-prenom').value = prenom;
+  document.getElementById('lic-gen-prix').value   = codePromo ? '24300' : '27000';
+  if(codePromo) document.getElementById('lic-gen-comm').value = codePromo;
+  document.getElementById('lic-gen-result').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+// ── GÉNÉRATION LICENCE ────────────────────────────────────────────────
+async function genererLicence(){
+  const tel      = document.getElementById('lic-gen-tel').value.replace(/\s/g,'').trim();
+  const prenom   = document.getElementById('lic-gen-prenom').value.trim();
+  const prix     = parseInt(document.getElementById('lic-gen-prix').value) || 27000;
+  const commCode = document.getElementById('lic-gen-comm').value.trim().toUpperCase();
+  const btnGen   = document.querySelector('[onclick="genererLicence()"]');
+
+  if(tel.length < 9){ toast('❌ Numéro de téléphone invalide'); return; }
+
+  const gasUrl = PARAMS.gasUrl || '';
+  if(!gasUrl){ toast('⚠️ URL Apps Script manquante dans Paramètres'); return; }
+
+  if(!ADMIN.jetonValide()){ toast('⚠️ Session expirée — reconnectez-vous'); adminLogout(); return; }
+  const session = ADMIN.getJeton();
+
+  btnGen.textContent = '⏳ Génération…'; btnGen.disabled = true;
+  try {
+    const payload = { type:'gen_licence', tel, prenom, prix, commercial:commCode||'', jeton:session.jeton, expire:session.expire };
+    const resp = await fetch(gasUrl + '?d=' + encodeURIComponent(JSON.stringify(payload)));
+    const data = await resp.json();
+    if(!data.ok){ toast('❌ ' + (data.error || 'Erreur GAS')); return; }
+
+    const code = data.code;
+    currentCode = code;
+
+    // Commission
+    const nbVentes     = LICENCES.filter(l => l.commercial === commCode).length + 1;
+    const commMontant  = commCode ? ADMIN.commMontant(nbVentes) : 0;
+
+    // Sauvegarder localement
+    const lic = { tel, prenom, code, prix, commercial: commCode||'', commission: commMontant, date: new Date().toISOString(), commPaye: false };
+    LICENCES.push(lic);
+    ADMIN.setData('licences', LICENCES);
+
+    // Marquer client comme licencié
+    const idx = CLIENTS.findIndex(c => c.tel === tel || c.tel === tel.replace(/\s/g,''));
+    if(idx >= 0){ CLIENTS[idx].licencie = true; ADMIN.setData('clients', CLIENTS); }
+
+    // Afficher le résultat
+    document.getElementById('lic-gen-result').style.display = 'block';
+    document.getElementById('lic-gen-code').textContent     = code;
+    document.getElementById('lic-gen-info').innerHTML =
+      `Client : <strong>${prenom || tel}</strong> · Prix encaissé : <strong>${fmt(prix)} Ar</strong>` +
+      (commCode ? ` · Commission <strong>${commCode}</strong> : <strong style="color:var(--r)">${fmt(commMontant)} Ar</strong>` : '');
+
+    affLicences(); affClients();
+    toast('✅ Licence générée pour ' + (prenom || tel));
+  } catch(e){
+    toast('❌ Erreur réseau — vérifiez votre connexion');
+  } finally {
+    btnGen.textContent = '⚡ Générer le code de licence'; btnGen.disabled = false;
+  }
+}
+
+function copierCode(){
+  const code = document.getElementById('lic-gen-code').textContent;
+  navigator.clipboard?.writeText(code)
+    .then(() => toast('📋 Code copié !'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = code; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      toast('📋 Code copié !');
+    });
+}
+
+function affLicences(){
+  document.getElementById('licences-tbody').innerHTML = [...LICENCES].reverse().map(l => `<tr>
+    <td><strong>${l.prenom || '—'}</strong></td>
+    <td style="font-family:var(--fm);font-size:12px">${l.tel}</td>
+    <td style="font-family:var(--fm);font-size:11px;color:var(--or-f)">${l.code}</td>
+    <td style="font-weight:800;color:var(--v);font-family:var(--fm)">${fmt(l.prix || 27000)} Ar</td>
+    <td>${l.commercial ? `<span class="badge badge-promo">${l.commercial}</span>` : '<span style="color:var(--gris);font-size:12px">Direct</span>'}</td>
+    <td style="font-size:12px;color:var(--gris)">${new Date(l.date).toLocaleDateString('fr-FR')}</td>
+  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--gris);padding:20px">Aucune licence générée</td></tr>';
+}
+
+// ── COMMERCIAUX ───────────────────────────────────────────────────────
+const GH_BASE = (function(){ var u=window.location.href; return u.includes('?')?u.split('?')[0]:u.replace(/\/tranoko_admin\.html$/,'').replace(/\/$/, ''); })();
+
+function affCommerciaux(){
+  const el = document.getElementById('comm-list');
+  el.innerHTML = COMMERCIAUX.map((c, i) => {
+    const licComm  = LICENCES.filter(l => l.commercial === c.code);
+    const nbVentes = licComm.length;
+    const taux     = ADMIN.commTaux(nbVentes);
+    const commDue  = licComm.filter(l => !l.commPaye).reduce((s,l) => s+(l.commission||0), 0);
+    const lien     = `${GH_BASE}?ref=${c.code}`;
+    return `<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:17px;font-weight:800">${c.nom}</div>
+          <span class="badge badge-promo">${c.code}</span>
+          <span style="font-size:11px;color:var(--gris);margin-left:6px">${c.dateAjout ? new Date(c.dateAjout).toLocaleDateString('fr-FR') : ''}</span>
+        </div>
+        <button class="btn btn-r btn-sm" onclick="supprimerCommercial('${c.code}')">🗑 Supprimer</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="text-align:center;background:var(--bl);border-radius:10px;padding:10px">
+          <div style="font-size:22px;font-weight:800;color:var(--b);font-family:var(--fm)">${nbVentes}</div>
+          <div style="font-size:10px;color:var(--b);font-weight:700">Licences vendues</div>
+        </div>
+        <div style="text-align:center;background:var(--or-l);border-radius:10px;padding:10px">
+          <div style="font-size:16px;font-weight:800;color:var(--or-f)">${Math.round(taux*100)}%</div>
+          <div style="font-size:10px;color:var(--or-f);font-weight:700">Taux commission</div>
+        </div>
+        <div style="text-align:center;background:${commDue>0?'var(--rl)':'var(--vl)'};border-radius:10px;padding:10px">
+          <div style="font-size:13px;font-weight:800;color:${commDue>0?'var(--rd)':'var(--vd)'};font-family:var(--fm)">${fmt(commDue)} Ar</div>
+          <div style="font-size:10px;color:${commDue>0?'var(--rd)':'var(--vd)'};font-weight:700">Commission due</div>
+        </div>
+      </div>
+
+      ${commDue > 0 ? `<button class="btn btn-v btn-sm" style="margin-bottom:12px" onclick="marquerCommPaye('${c.code}')">
+        ✅ Marquer payée (${fmt(commDue)} Ar)
+      </button>` : ''}
+
+      <div style="background:var(--gl);border-radius:10px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--gris);margin-bottom:4px;font-weight:800;letter-spacing:.06em">LIEN AFFILIÉ</div>
+        <div style="font-size:12px;color:var(--b);font-family:var(--fm);word-break:break-all;margin-bottom:8px">${lien}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-out" onclick="copierLien('${lien}')">📋 Copier le lien</button>
+          <button class="btn btn-sm btn-out" onclick="copierMessage('${c.nom}','${lien}','${c.code}')">💬 Message type</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="card" style="text-align:center;color:var(--gris);padding:28px">Aucun commercial — ajoutez le premier ☝️</div>';
+}
+
+function ajouterCommercial(){
+  const nom  = document.getElementById('new-comm-nom').value.trim();
+  const code = document.getElementById('new-comm-code').value.trim().toUpperCase().replace(/\s/g,'');
+  if(!nom || !code){ toast('Remplissez le nom et le code'); return; }
+  if(COMMERCIAUX.find(c => c.code === code)){ toast('Ce code existe déjà'); return; }
+
+  const session = ADMIN.getJeton();
+  if(!session){ toast('⚠️ Session expirée'); return; }
+
+  toast('⏳ Ajout en cours…');
+  gasCallAsync({ type:'add_commercial', nom, code, ...session })
+    .then(res => {
+      if(!res.ok){ toast('❌ ' + (res.error || 'Erreur')); return; }
+      document.getElementById('new-comm-nom').value  = '';
+      document.getElementById('new-comm-code').value = '';
+      toast('✅ Commercial ' + nom + ' ajouté');
+      chargerDepuisGAS();
+    })
+    .catch(() => toast('❌ Erreur réseau'));
+}
+
+function supprimerCommercial(code){
+  if(!confirm('Supprimer ce commercial ? Ses licences associées restent inchangées.')) return;
+  const session = ADMIN.getJeton();
+  if(!session){ toast('⚠️ Session expirée'); return; }
+
+  gasCallAsync({ type:'del_commercial', code, ...session })
+    .then(res => {
+      if(!res.ok){ toast('❌ ' + (res.error || 'Erreur')); return; }
+      toast('✅ Commercial supprimé');
+      chargerDepuisGAS();
+    })
+    .catch(() => toast('❌ Erreur réseau'));
+}
+
+function marquerCommPaye(code){
+  const session = ADMIN.getJeton();
+  if(!session){ toast('⚠️ Session expirée'); return; }
+
+  gasCallAsync({ type:'payer_commission', code, ...session })
+    .then(res => {
+      if(!res.ok){ toast('❌ ' + (res.error || 'Erreur')); return; }
+      toast('✅ Commission payée enregistrée pour ' + code);
+      chargerDepuisGAS();
+    })
+    .catch(() => toast('❌ Erreur réseau'));
+}
+
+function copierLien(lien){
+  navigator.clipboard?.writeText(lien)
+    .then(() => toast('📋 Lien copié !'))
+    .catch(() => { const ta=document.createElement('textarea'); ta.value=lien; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('📋 Lien copié !'); });
+}
+
+function copierMessage(nom, lien, code){
+  const msg =
+`Bonjour ${nom},
+
+Voici votre lien personnel Tranoko :
+${lien}
+
+Partagez ce lien sur votre page Facebook, WhatsApp ou TikTok.
+Chaque client qui s'inscrit via votre lien est automatiquement crédité à vous.
+
+✅ Vos clients bénéficient de :
+- 2 jours d'essai gratuit (au lieu de 1)
+- 10% de réduction sur la licence (24 300 Ar au lieu de 27 000 Ar)
+
+Votre code promo : ${code}
+Commission : 15% par vente (20% à partir de 29 ventes)
+
+Bonne vente ! 🏗`;
+  navigator.clipboard?.writeText(msg)
+    .then(() => toast('💬 Message copié !'))
+    .catch(() => { const ta=document.createElement('textarea'); ta.value=msg; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('💬 Message copié !'); });
+}
+
+function remplirSelCommerciaux(){
+  const sel = document.getElementById('lic-gen-comm');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Aucun (client direct)</option>' +
+    COMMERCIAUX.map(c => `<option value="${c.code}">${c.nom} (${c.code})</option>`).join('');
+}
+
+// ── PARAMÈTRES ────────────────────────────────────────────────────────
+function chargerParams(){
+  const fin = document.getElementById('param-fin-lanc');
+  if(fin) fin.value = PARAMS.finLanc || '2026-06-30';
+  const gas = document.getElementById('param-gas-url');
+  if(gas) gas.value = PARAMS.gasUrl || '';
+  majStatutLanc();
+}
+
+function majStatutLanc(){
+  const fin   = new Date(PARAMS.finLanc || '2026-06-30');
+  const jours = Math.ceil((fin - Date.now()) / 86400000);
+  const el    = document.getElementById('param-lanc-status');
+  if(!el) return;
+  el.innerHTML = jours > 0
+    ? `<span style="color:var(--v);font-weight:700">✅ Actif — encore ${jours} jour${jours>1?'s':''}</span>`
+    : `<span style="color:var(--r);font-weight:700">❌ Expiré — prix catalogue en vigueur</span>`;
+}
+
+function sauverParams(){
+  PARAMS.finLanc = document.getElementById('param-fin-lanc')?.value || '2026-06-30';
+  PARAMS.gasUrl  = document.getElementById('param-gas-url')?.value || '';
+  ADMIN.setObj('params', PARAMS);
+  majStatutLanc();
+  toast('✅ Paramètres sauvegardés');
+}
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────
+function exporterDonnees(){
+  const data = { clients:CLIENTS, licences:LICENCES, commerciaux:COMMERCIAUX, params:PARAMS, date:new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'TRANOKO_admin_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click(); URL.revokeObjectURL(url);
+  toast('📥 Sauvegarde téléchargée');
+}
+
+function importerDonnees(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(data.clients)     { CLIENTS = data.clients; ADMIN.setData('clients', CLIENTS); }
+      if(data.licences)    { LICENCES = data.licences; ADMIN.setData('licences', LICENCES); }
+      if(data.commerciaux) { COMMERCIAUX = data.commerciaux; ADMIN.setData('commerciaux', COMMERCIAUX); }
+      if(data.params)      { PARAMS = data.params; ADMIN.setObj('params', PARAMS); }
+      chargerParams(); remplirSelCommerciaux(); affDashboard(); affClients(); affLicences(); affCommerciaux();
+      toast('✅ Données importées avec succès');
+    } catch { toast('❌ Fichier JSON invalide'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── UTILITAIRES ───────────────────────────────────────────────────────
+function fmt(n){ return Number(n).toLocaleString('fr'); }
+</script>
+</body>
+</html>
